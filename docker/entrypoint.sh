@@ -24,6 +24,10 @@ model = "${VLLM_MODEL:-qwen3.8-27b}"
 model_provider = "vllm"
 model_catalog_json = "$home/models.json"
 check_for_update_on_startup = false
+# Codex's sandbox can't start in a container, which is the sandbox here. Approvals stay on
+# request: Codex asks before escalating, and AgentLTL's \`ask\` rules ask.
+sandbox_mode = "danger-full-access"
+approval_policy = "on-request"
 
 [model_providers.vllm]
 name = "vLLM"
