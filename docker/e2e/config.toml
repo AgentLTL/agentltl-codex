@@ -1,0 +1,18 @@
+model = "gpt-5.5"
+model_provider = "scripted"
+check_for_update_on_startup = false
+
+[model_providers.scripted]
+name = "scripted"
+base_url = "http://127.0.0.1:8999/v1"
+env_key = "FAKE_KEY"
+wire_api = "responses"
+
+[analytics]
+enabled = false
+
+[feedback]
+enabled = false
+
+[projects."/work"]
+trust_level = "trusted"

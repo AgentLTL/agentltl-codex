@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# The `agentltl` command: install, validate, check, tools, trace, library, use, memory...
+# Runs the guard's code from this plugin directory with the plugin's virtualenv, building it
+# first if this version's dependency pins have none yet (see scripts/env.sh).
+root="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+# shellcheck source=../scripts/env.sh
+source "$root/scripts/env.sh"
+py="$(env_python)"
+[[ -n "$py" ]] || { env_build && py="$(env_python)"; }
+if [[ -z "$py" ]]; then
+    echo "agentltl: the guard is not installed; run $root/scripts/setup.sh" >&2
+    exit 1
+fi
+PYTHONPATH="$root/src${PYTHONPATH:+:$PYTHONPATH}" exec "$py" -m agentltl_codex.cli "$@"

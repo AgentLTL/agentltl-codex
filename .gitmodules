@@ -1,0 +1,9 @@
+[submodule "vendor/AgentLTL"]
+	path = vendor/AgentLTL
+	url = https://github.com/AgentLTL/AgentLTL.git
+[submodule "vendor/cli-to-tools"]
+	path = vendor/cli-to-tools
+	url = https://github.com/AgentLTL/cli-to-tools.git
+[submodule "vendor/agentltl-coding"]
+	path = vendor/agentltl-coding
+	url = https://github.com/AgentLTL/agentltl-coding.git

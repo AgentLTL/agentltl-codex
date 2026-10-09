@@ -1,0 +1,8 @@
+{
+  "name": "agentltl-codex-docker",
+  "private": true,
+  "description": "The Codex CLI version the Docker image and the end-to-end test use (Dependabot proposes each new release).",
+  "dependencies": {
+    "@openai/codex": "0.162.0"
+  }
+}

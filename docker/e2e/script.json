@@ -1,0 +1,22 @@
+{"steps": [
+  {"calls": [{"name": "exec_command", "args": {"cmd": "ls"}}]},
+  {"calls": [{"name": "apply_patch", "input": "*** Begin Patch\n*** Add File: notes.txt\n+hello\n*** End Patch\n"}]},
+  {"calls": [{"name": "apply_patch", "input": "*** Begin Patch\n*** Add File: README.md\n+overwritten\n*** End Patch\n"}]},
+  {"calls": [{"name": "exec_command", "args": {"cmd": "cat README.md"}}]},
+  {"calls": [{"name": "apply_patch", "input": "*** Begin Patch\n*** Add File: README.md\n+# Notes\n*** End Patch\n"}]},
+  {"calls": [{"name": "exec_command", "args": {"cmd": "sudo ls"}}]},
+  {"calls": [{"name": "exec_command", "args": {"cmd": "git add -A && git commit -q -m 'add notes' -m 'Co-authored-by: Codex <noreply@openai.com>'"}}]},
+  {"calls": [{"name": "exec_command", "args": {"cmd": "echo y | git push --force origin main"}}]},
+  {"calls": [{"name": "spawn_agent", "namespace": "multi_agent_v1", "args": {"message": "CHILD: check who you are"}}]},
+  {"calls": [{"name": "exec_command", "args": {"cmd": "sleep 4; echo waited"}}]},
+  {"text": "Done."},
+  {"calls": [{"name": "exec_command", "args": {"cmd": "git add -A && git commit -q -m 'add notes'"}}]},
+  {"calls": [{"name": "exec_command", "args": {"cmd": "mkdir -p build && rm -r build"}}]},
+  {"text": "May I delete the build directory (rm -r build)?"},
+  {"calls": [{"name": "exec_command", "args": {"cmd": "mkdir -p build && rm -r build"}}]},
+  {"text": "Deleted."}
+ ],
+ "child": [
+  {"calls": [{"name": "exec_command", "args": {"cmd": "sudo id"}}]},
+  {"text": "Child done."}
+ ]}

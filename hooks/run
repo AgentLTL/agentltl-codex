@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# Hook launcher (hooks/hooks.json): finds the plugin's Python and runs the guard from this
+# plugin directory. $1 is the hook event: SessionStart, UserPromptSubmit, PreToolUse,
+# PostToolUse, SubagentStart or Stop. The first hook of a plugin version whose dependency pins
+# have no environment yet builds it (see scripts/env.sh), whichever hook that is.
+#
+# Codex lets a call through when a hook fails (an exit status other than 0 or 2, bad JSON, a
+# timeout), so this always exits 0 and answers a PreToolUse it could not check with a denial.
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=../scripts/env.sh
+source "$root/scripts/env.sh"
+
+deny() {
+    local msg="${1//\"/\'}"
+    printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"%s Tell the user."},"systemMessage":"%s"}' "$msg" "$msg"
+}
+
+py="$(env_python)"
+if [[ -z "$py" ]]; then
+    env_build && py="$(env_python)"
+fi
+if [[ "$1" == "SessionStart" ]]; then
+    env_touch_and_prune
+fi
+payload="$(cat)"
+if [[ -z "$py" ]]; then
+    # Not installed. Stay out of the way unless rules exist, in which case say so loudly.
+    top="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+    if [[ -f "$top/AGENTLTL.yaml" || -f "${CODEX_HOME:-$HOME/.codex}/AGENTLTL.yaml" ]]; then
+        msg="AgentLTL for Codex could not build its environment (run $root/scripts/setup.sh); rules are not enforced."
+        case "$1" in
+            PreToolUse) deny "$msg" ;;
+            SessionStart) printf '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"%s Tell the user."},"systemMessage":"%s"}' "$msg" "$msg" ;;
+        esac
+    fi
+    exit 0
+fi
+out="$(printf '%s' "$payload" | PYTHONPATH="$root/src${PYTHONPATH:+:$PYTHONPATH}" "$py" -m agentltl_codex.hook "$1")"
+status=$?
+if [[ $status -ne 0 && "$1" == "PreToolUse" ]]; then
+    deny "AgentLTL guard crashed (exit $status); this call was refused because it could not be checked against the rules."
+else
+    printf '%s' "$out"
+fi
+exit 0

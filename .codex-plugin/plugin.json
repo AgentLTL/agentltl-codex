@@ -1,0 +1,15 @@
+{
+  "name": "agentltl",
+  "version": "0.1.0",
+  "description": "AgentLTL rules in front of every Codex tool call, shell commands included: never, before, after, at most, finally.",
+  "keywords": ["agentltl", "rules", "guardrails", "hooks", "ltl", "safety"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "AgentLTL",
+    "shortDescription": "Enforce rules on every tool call",
+    "longDescription": "Write rules in AGENTLTL.yaml (never force-push, read a file before overwriting it, run the tests before finishing...). Every Codex tool call, shell commands and apply_patch included, is checked against them before it runs.",
+    "developerName": "AgentLTL",
+    "category": "Coding",
+    "websiteURL": "https://agentltl.github.io/harnesses/codex/"
+  }
+}

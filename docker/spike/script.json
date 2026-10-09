@@ -1,0 +1,20 @@
+{"steps": [
+  {"calls": [{"name": "exec_command", "args": {"cmd": "ls"}}]},
+  {"calls": [{"name": "apply_patch", "input": "*** Begin Patch\n*** Add File: new.txt\n+one\n+two\n*** Add File: README.md\n+replaced\n*** End Patch\n"}]},
+  {"calls": [{"name": "exec_command", "args": {"cmd": "cat README.md; sed -n 1p new.txt"}}]},
+  {"calls": [{"name": "apply_patch", "input": "*** Begin Patch\n*** Update File: new.txt\n@@\n one\n-two\n+three\n*** Update File: README.md\n*** Move to: README2.md\n@@\n-hello\n+moved\n*** End Patch\n"}]},
+  {"calls": [{"name": "exec_command", "args": {"cmd": "false"}},
+             {"name": "exec_command", "args": {"cmd": "echo PROBE_DENY"}},
+             {"name": "exec_command", "args": {"cmd": "ls /nonexistent"}}]},
+  {"calls": [{"name": "exec_command", "args": {"cmd": "echo PROBE_WARN"}}]},
+  {"calls": [{"name": "spawn_agent", "namespace": "multi_agent_v1", "args": {"message": "CHILD: run pwd"}}]},
+  {"calls": [{"name": "exec_command", "args": {"cmd": "sleep 3; echo waited"}}]},
+  {"calls": [{"name": "exec_command", "args": {"cmd": "git add -A && git commit -qm 'work\n\nCo-authored-by: Codex <noreply@openai.com>'"}}]},
+  {"calls": [{"name": "exec_command", "args": {"cmd": "rm new.txt"}}]},
+  {"text": "Done."},
+  {"text": "Really done."}
+ ],
+ "child": [
+  {"calls": [{"name": "exec_command", "args": {"cmd": "pwd"}}]},
+  {"text": "Child done."}
+ ]}

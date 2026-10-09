@@ -1,0 +1,23 @@
+{
+  "description": "AgentLTL for Codex: checks every tool call, shell commands included, against AGENTLTL.yaml",
+  "hooks": {
+    "SessionStart": [
+      {"hooks": [{"type": "command", "command": "\"${PLUGIN_ROOT}/hooks/run\" SessionStart", "timeout": 600, "statusMessage": "AgentLTL: loading the rules"}]}
+    ],
+    "UserPromptSubmit": [
+      {"hooks": [{"type": "command", "command": "\"${PLUGIN_ROOT}/hooks/run\" UserPromptSubmit", "timeout": 60}]}
+    ],
+    "PreToolUse": [
+      {"matcher": "*", "hooks": [{"type": "command", "command": "\"${PLUGIN_ROOT}/hooks/run\" PreToolUse", "timeout": 120}]}
+    ],
+    "PostToolUse": [
+      {"matcher": "*", "hooks": [{"type": "command", "command": "\"${PLUGIN_ROOT}/hooks/run\" PostToolUse", "timeout": 120}]}
+    ],
+    "SubagentStart": [
+      {"hooks": [{"type": "command", "command": "\"${PLUGIN_ROOT}/hooks/run\" SubagentStart", "timeout": 60}]}
+    ],
+    "Stop": [
+      {"hooks": [{"type": "command", "command": "\"${PLUGIN_ROOT}/hooks/run\" Stop", "timeout": 60}]}
+    ]
+  }
+}
