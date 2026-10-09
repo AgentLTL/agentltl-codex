@@ -8,7 +8,7 @@
 # scratch git repository; the entrypoint points Codex at the model in VLLM_*.
 FROM node:22-bookworm-slim
 RUN apt-get update \
- && apt-get install -y --no-install-recommends python3 python3-venv git ca-certificates jq \
+ && apt-get install -y --no-install-recommends python3 python3-venv git ca-certificates jq procps \
  && rm -rf /var/lib/apt/lists/*
 COPY package.json /opt/agentltl/package.json
 RUN npm install -g "@openai/codex@$(jq -r '.dependencies["@openai/codex"]' /opt/agentltl/package.json)"
