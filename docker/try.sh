@@ -35,6 +35,8 @@ rules:
     finally: {call: {tool: git_commit, succeeded: true}, since: [Write, Edit]}
 YAML
 export PATH="$HOME/.local/bin:$PATH"
+# Without its background server, the interactive codex sends no tools vLLM rejects.
+echo "alias codex=\"codex --no-daemon\"" >> ~/.bashrc
 echo
 echo "Ready: /work has AGENTLTL.yaml. Type codex to start; agentltl trace shows what was refused."
 exec bash'

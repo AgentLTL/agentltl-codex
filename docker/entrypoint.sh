@@ -9,8 +9,9 @@ if [[ -n "${VLLM_BASE_URL:-}" && ! -f "$home/config.toml" ]]; then
     [[ "$base" == */v1 ]] || base="$base/v1"
     # Codex gives a model it doesn't know fewer tools (no apply_patch): describe this one as
     # Codex's own gpt-5.5, under its name, minus what vLLM's Responses API rejects ("unknown
-    # tool type"): tool_search, and the namespace tools of subagents (features.multi_agent,
-    # below).
+    # tool type"): tool_search, and namespace tools: subagents' (features.multi_agent, below),
+    # the interactive codex's managed worktrees (features.worktrees) and its task tools (only
+    # with its background server: run `codex --no-daemon`, which docker/try.sh's shell does).
     codex debug models --bundled | python3 -c '
 import json, sys
 model, window = sys.argv[1], int(sys.argv[2])
@@ -37,6 +38,7 @@ wire_api = "responses"
 
 [features]
 multi_agent = false
+worktrees = false
 
 [analytics]
 enabled = false
