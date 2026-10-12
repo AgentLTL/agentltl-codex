@@ -64,7 +64,13 @@ runs, OpenAI's or your own.
 
 ## Installation
 
-Requires Python 3.10+, git, and OpenAI Codex CLI (tested with 0.162).
+Requires Python 3.10+, git, and OpenAI Codex CLI (tested with 0.162). Paste this into Codex:
+
+```
+Set up the AgentLTL plugin for me by following https://raw.githubusercontent.com/AgentLTL/agentltl-codex/main/SETUP.md
+```
+
+Or install manually:
 
 ```bash
 codex plugin marketplace add AgentLTL/agentltl-codex
