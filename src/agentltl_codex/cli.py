@@ -123,6 +123,32 @@ def _wrapper(cache: str) -> str:
         'exec "${newest%/}/bin/agentltl" "$@"',
         ""])
 
+LINK_MARK = "# agentltl: runs "
+
+
+def _link(target: str, link: str) -> None:
+    """Symlink `link` to `target`. Where symlinks are not allowed (Windows without developer
+    mode or administrator rights), write a small script that runs it instead."""
+    try:
+        os.symlink(target, link)
+        return
+    except (OSError, NotImplementedError):
+        pass
+    posix = target.replace("\\", "/")
+    with open(link, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(f'#!/usr/bin/env bash\n{LINK_MARK}{posix}\nexec "{posix}" "$@"\n')
+    os.chmod(link, 0o755)
+
+
+def _links_to(link: str, target: str) -> bool:
+    if os.path.realpath(link) == os.path.realpath(target):
+        return True
+    try:
+        with open(link, encoding="utf-8", errors="replace") as fh:
+            return f"{LINK_MARK}{target.replace(chr(92), '/')}\n" in fh.read(4096)
+    except OSError:
+        return False
+
 
 def _install_cli(args: argparse.Namespace, quiet_clash: bool = False) -> int:
     folder = os.path.expanduser(args.dir)
@@ -130,7 +156,7 @@ def _install_cli(args: argparse.Namespace, quiet_clash: bool = False) -> int:
     link = os.path.join(folder, "agentltl")
     cache = _cache_dir()
     if os.path.lexists(link):
-        if os.path.realpath(link) == os.path.realpath(target):
+        if _links_to(link, target):
             return 0
         if cache and not os.path.islink(link) and WRAPPER_MARK in _read(link):
             if _read(link) == _wrapper(cache):
@@ -148,7 +174,7 @@ def _install_cli(args: argparse.Namespace, quiet_clash: bool = False) -> int:
         os.replace(tmp, link)
         shown = f"{link} (runs the newest version in {cache})"
     else:
-        os.symlink(target, link)
+        _link(target, link)
         shown = f"{link} -> {target}"
     on_path = folder in os.environ.get("PATH", "").split(os.pathsep)
     print(shown + ("" if on_path else f"\n{folder} is not on your PATH yet."))
