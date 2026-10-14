@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 import glob
 import os
+import shlex
 import subprocess
 import sys
 from typing import Any, Callable, Dict, List, Optional
@@ -132,11 +133,14 @@ def _link(target: str, link: str) -> None:
     try:
         os.symlink(target, link)
         return
+    except FileExistsError:
+        raise                       # another install-cli got there first: do not write through it
     except (OSError, NotImplementedError):
         pass
     posix = target.replace("\\", "/")
-    with open(link, "w", encoding="utf-8", newline="\n") as fh:
-        fh.write(f'#!/usr/bin/env bash\n{LINK_MARK}{posix}\nexec "{posix}" "$@"\n')
+    # "x": never open what exists, a symlink another process just made included.
+    with open(link, "x", encoding="utf-8", newline="\n") as fh:
+        fh.write(f'#!/usr/bin/env bash\n{LINK_MARK}{posix}\nexec {shlex.quote(posix)} "$@"\n')
     os.chmod(link, 0o755)
 
 
