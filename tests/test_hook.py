@@ -2,6 +2,7 @@
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 
@@ -28,6 +29,12 @@ def project(tmp_path):
     (root / ".git").mkdir(parents=True)
     (root / "AGENTLTL.yaml").write_text(RULES)
     return root
+
+
+
+def _json_path(path):
+    """*path* as it is written inside a JSON string (backslashes escaped)."""
+    return json.dumps(str(path))[1:-1]
 
 
 def event(project, name, tool=None, args=None, **extra):
@@ -284,7 +291,7 @@ def launch(project, python, event_name="PreToolUse"):
     payload = json.dumps({"session_id": "s1", "cwd": str(project), "tool_name": "Bash",
                           "hook_event_name": event_name, "tool_use_id": "c",
                           "tool_input": {"command": "git push"}})
-    out = subprocess.run([os.path.join(ROOT, "hooks", "run"), event_name], input=payload,
+    out = subprocess.run([shutil.which("bash"), os.path.join(ROOT, "hooks", "run"), event_name], input=payload,
                          capture_output=True, text=True, env=env, cwd=str(project))
     assert out.returncode == 0            # Codex lets a call through when a hook fails
     return json.loads(out.stdout) if out.stdout else None
@@ -325,8 +332,8 @@ def test_captured_session_replays(tmp_path):
     for e in data["sessions"][0]:
         raw = json.dumps(e["payload"])
         for path, local in rollouts.items():
-            raw = raw.replace(path, local)
-        payload = json.loads(raw.replace('"/work', '"' + str(root)))
+            raw = raw.replace(json.dumps(path)[1:-1], _json_path(local))
+        payload = json.loads(raw.replace('"/work', '"' + _json_path(root)))
         out = hook.run(e["event"], payload)
         if e["event"] == "PreToolUse":
             answers.append((payload["tool_name"], decision(out)))

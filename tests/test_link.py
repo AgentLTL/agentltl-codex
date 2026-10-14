@@ -45,7 +45,7 @@ def test_the_script_runs_a_target_whose_path_has_shell_characters(tmp_path, monk
     target.chmod(0o755)
     link = tmp_path / "link"
     cli._link(str(target), str(link))
-    out = subprocess.run(["bash", str(link), "a"], capture_output=True, text=True, cwd=tmp_path)
+    out = subprocess.run([shutil.which("bash"), str(link), "a"], capture_output=True, text=True, cwd=tmp_path)
     assert out.stdout == "ran a\n", out.stderr
     assert not (tmp_path / "pwned").exists() and not (tmp_path / "pwned2").exists()
 
