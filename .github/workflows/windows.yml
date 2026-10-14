@@ -1,0 +1,54 @@
+# The plugin on native Windows (Git Bash): scripts/setup.sh builds the virtualenv from the pins in
+# vendor.lock, then the CLI and the hook run from it. Windows has `python` but usually no
+# `python3`, and its virtualenvs use Scripts\, not bin/.
+name: Windows
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: The plugin's data folder, with backslashes
+        run: echo "AGENTLTL_DATA_DIR=${RUNNER_TEMP}\\plugin-data" >> "$GITHUB_ENV"
+      - name: Build the environment
+        run: scripts/setup.sh
+      - name: A project with rules
+        run: |
+          mkdir -p "$RUNNER_TEMP/proj" && cp docker/e2e/AGENTLTL.yaml "$RUNNER_TEMP/proj/"
+          cd "$RUNNER_TEMP/proj" && git init -q
+          "$GITHUB_WORKSPACE/bin/agentltl" validate
+      - name: install-cli puts a working agentltl on the PATH
+        run: |
+          bin_dir="$RUNNER_TEMP/cli-bin"
+          "$GITHUB_WORKSPACE/bin/agentltl" install-cli --dir "$bin_dir"
+          cd "$RUNNER_TEMP/proj" && "$bin_dir/agentltl" validate
+      - name: The hook blocks what a rule forbids and allows the rest
+        run: |
+          cd "$RUNNER_TEMP/proj"
+          hook() {  # hook <command>: prints the decision
+            python -c 'import json, os, sys; print(json.dumps({"session_id": "w1", "cwd": os.getcwd(), "hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_use_id": "t", "tool_input": {"command": sys.argv[1]}}))' "$1" \
+              | "$GITHUB_WORKSPACE/hooks/run" PreToolUse \
+              | python -c 'import json, sys; t = sys.stdin.read(); o = json.loads(t) if t.strip() else {}; print(o.get("hookSpecificOutput", {}).get("permissionDecision", "allow"))'
+          }
+          fail=0
+          check() {  # check <expected> <command>
+            got="$(hook "$2")"
+            echo "$2 -> $got (want $1)"
+            [ "$got" = "$1" ] || fail=1
+          }
+          check deny  "sudo ls"
+          check deny  "git push --force"
+          check allow "ls"
+          exit $fail
