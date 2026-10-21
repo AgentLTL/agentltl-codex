@@ -6,20 +6,34 @@
 #
 # Codex lets a call through when a hook fails (an exit status other than 0 or 2, bad JSON, a
 # timeout), so this always exits 0 and answers a PreToolUse it could not check with a denial.
+# A Python that cannot run the guard gets its environment rebuilt once and the hook retried
+# before that.
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export PYTHONUTF8=1   # Windows pipes use the ANSI code page: the hook payload, rule files
                       # and the status line are UTF-8
+                      # (the guard itself runs with -I, which ignores it: it gets -X utf8)
 # The environment is the plugin's own: a PYTHONPATH or PYTHONHOME the user's shell exports (a
 # project's virtualenv, say) would put that project's packages ahead of ours. Tests and
 # development point AGENTLTL_CODEX_PYTHON at their own Python and keep theirs.
 if [[ -z "${AGENTLTL_CODEX_PYTHON:-}" ]]; then unset PYTHONPATH; fi
-unset PYTHONHOME
+unset PYTHONHOME PYTHONEXECUTABLE VIRTUAL_ENV
 # shellcheck source=../scripts/env.sh
 source "$root/scripts/env.sh"
 
 deny() {
-    local msg="${1//\"/\'}"
+    local msg
+    msg="$(printf '%s' "${1//\"/\'}" | tr -d '\000-\037' | sed 's/\\/\\\\/g' | cut -c1-400)"
     printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"%s Tell the user."},"systemMessage":"%s"}' "$msg" "$msg"
+}
+
+rules_exist() {
+    local top
+    top="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+    [[ -f "$top/AGENTLTL.yaml" || -f "${CODEX_HOME:-$HOME/.codex}/AGENTLTL.yaml" ]]
+}
+
+guard() {
+    printf '%s' "$payload" | "$py" -I -s -X utf8 "$root/scripts/launch.py" agentltl_codex.hook "$1" 2>"$errfile"
 }
 
 py="$(env_python)"
@@ -29,12 +43,11 @@ fi
 if [[ "$1" == "SessionStart" ]]; then
     env_touch_and_prune
 fi
-payload="$(cat)"
+payload="$(cat)"   # read once: a retry needs the same input
 if [[ -z "$py" ]]; then
     # Not installed. Stay out of the way unless rules exist, in which case say so loudly.
-    top="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-    if [[ -f "$top/AGENTLTL.yaml" || -f "${CODEX_HOME:-$HOME/.codex}/AGENTLTL.yaml" ]]; then
-        msg="AgentLTL for Codex could not build its environment (run $root/scripts/setup.sh); rules are not enforced."
+    if rules_exist; then
+        msg="AgentLTL for Codex could not build its environment (run $root/bin/agentltl doctor, then $root/scripts/setup.sh); rules are not enforced."
         case "$1" in
             PreToolUse) deny "$msg" ;;
             SessionStart) printf '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"%s Tell the user."},"systemMessage":"%s"}' "$msg" "$msg" ;;
@@ -42,11 +55,22 @@ if [[ -z "$py" ]]; then
     fi
     exit 0
 fi
-out="$(printf '%s' "$payload" | PYTHONPATH="$root/src${PYTHONPATH:+:$PYTHONPATH}" "$py" -m agentltl_codex.hook "$1")"
-status=$?
-if [[ $status -ne 0 && "$1" == "PreToolUse" ]]; then
-    deny "AgentLTL guard crashed (exit $status); this call was refused because it could not be checked against the rules."
+errfile="$(mktemp 2>/dev/null || echo /dev/null)"
+trap '[[ "$errfile" == /dev/null ]] || rm -f "$errfile"' EXIT
+out="$(guard "$1")"; status=$?
+if [[ $status -ne 0 ]] && env_heal "$py"; then
+    # Python could not start or import the guard's libraries: rebuild and try once more.
+    env_build && py="$(env_python)" && { out="$(guard "$1")"; status=$?; }
+fi
+if [[ $status -ne 0 ]]; then
+    if [[ "$1" == "PreToolUse" ]]; then
+        deny "AgentLTL guard crashed (exit $status: $(head -n 3 "$errfile" | tr '\n' ' ')); this call was refused because it could not be checked against the rules. Run $root/bin/agentltl doctor."
+    elif [[ "$1" == "SessionStart" ]] && rules_exist; then
+        msg="AgentLTL could not run its guard; NO rules are enforced (run $root/bin/agentltl doctor)."
+        printf '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"%s Tell the user."},"systemMessage":"%s"}' "$msg" "$msg"
+    fi
 else
+    env_touch
     printf '%s' "$out"
 fi
 exit 0
