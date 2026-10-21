@@ -11,6 +11,7 @@
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export PYTHONUTF8=1   # Windows pipes use the ANSI code page: the hook payload, rule files
                       # and the status line are UTF-8
+                      # (the guard itself runs with -I, which ignores it: it gets -X utf8)
 # The environment is the plugin's own: a PYTHONPATH or PYTHONHOME the user's shell exports (a
 # project's virtualenv, say) would put that project's packages ahead of ours. Tests and
 # development point AGENTLTL_CODEX_PYTHON at their own Python and keep theirs.
@@ -32,7 +33,7 @@ rules_exist() {
 }
 
 guard() {
-    printf '%s' "$payload" | "$py" -I -s "$root/scripts/launch.py" agentltl_codex.hook "$1" 2>"$errfile"
+    printf '%s' "$payload" | "$py" -I -s -X utf8 "$root/scripts/launch.py" agentltl_codex.hook "$1" 2>"$errfile"
 }
 
 py="$(env_python)"
