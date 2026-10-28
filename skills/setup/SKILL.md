@@ -34,7 +34,7 @@ of `AGENTLTL.yaml`; the rule itself stays in the plugin and gets fixes with plug
    - Group the entries by theme using their tags, for example "Git safety", "Files and
      secrets", or "Workflow and cost".
    - Show each entry's `name` and its `summary`.
-   - Offer a bundle (an entry tagged `bundle`, such as `devops-secrets`) as one choice that
+   - Offer a bundle (an entry tagged `bundle`, such as `devops-secrets`, or a theme: `theme-release-safety`, `theme-data-safety`, `theme-budget`, `theme-research`, `theme-human-in-the-loop`) as one choice that
      switches on all the entries it lists.
    - Mark entries already on with "(on)". Tell the user that unticking one switches it off.
    - Outside Plan mode, number the entries in your reply and ask for the numbers.
