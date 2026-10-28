@@ -107,6 +107,10 @@ rules:
     why: Every change gets a CHANGELOG line.
 ```
 
+The library also has **themes**, bundles for one topic: `theme-release-safety`, `theme-data-safety`,
+`theme-budget`, `theme-research` and `theme-human-in-the-loop` (`agentltl library` lists what each
+contains). A rule in `ask` mode cannot prompt here: the call is refused once and Codex is told to ask you.
+
 Rules name tools as the library does, with Claude Code's names, so one file serves every
 agent; Codex's tools are mapped onto them:
 
