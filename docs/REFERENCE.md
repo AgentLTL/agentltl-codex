@@ -58,7 +58,7 @@ codex plugin add agentltl@agentltl
 | `claude plugin install agentltl@agentltl` | `codex plugin marketplace add AgentLTL/agentltl-codex`, `codex plugin add agentltl@agentltl`, then `agentltl install` to trust the hooks |
 | Hooks in the plugin's `hooks.json` | the same file and events, run once trusted (`agentltl install`, or `/hooks`) |
 | `SessionStart`: the rules in force | the same (`additionalContext`, and `systemMessage` "AgentLTL: N rule(s) in force"); `SubagentStart` lists them to a subagent |
-| `UserPromptSubmit`: lifts a `stop`, starts a turn | the same; it also marks pending `ask`s answered. A subagent's task prompt (with an `agent_id`) is not the user and is ignored |
+| `UserPromptSubmit`: lifts a `stop`, starts a turn; records the prompt when a rule's `UserPrompt` target matches it | the same; it also marks pending `ask`s answered. A subagent's task prompt (with an `agent_id`) is not the user and is ignored |
 | PreToolUse `deny`, with a reason | the same; Codex gives the model "Command blocked by PreToolUse hook: <reason>". Notes from `log` and `warn` rules go as `additionalContext` |
 | PreToolUse `ask` | no such answer (Codex would treat it as a hook failure and allow the call): the call is denied, Codex is told to ask the user in its reply and end its turn (or use `request_user_input` in Plan mode), and once the user writes again the exact same call goes through once |
 | `systemMessage` | the same: shown to the user as a notice (rules in force, refusals, credential warnings, `finally` send-backs); `codex exec --json` doesn't show them |
@@ -81,7 +81,7 @@ codex plugin add agentltl@agentltl
 |---|---|---|
 | `SessionStart` | `session_id`, `cwd` | `additionalContext`: the rules in force; `systemMessage` for the user |
 | `SubagentStart` | `session_id`, `cwd` | `additionalContext`: the rules, for the subagent |
-| `UserPromptSubmit` | `session_id`, `agent_id` | nothing: lifts a `stop`, resets `finally` send-backs, marks pending `ask`s answered |
+| `UserPromptSubmit` | `session_id`, `agent_id`, `prompt` | nothing: lifts a `stop`, resets `finally` send-backs, marks pending `ask`s answered; records the prompt as a `UserPrompt {prompt}` call when a rule's `UserPrompt` target matches it (as typed, with `$skill` mentions: Codex loads a mentioned skill itself, without a tool call), so rules can react to what was asked |
 | `PreToolUse` | `tool_name`, `tool_input`, `permission_mode` | `permissionDecision: deny` with a reason, and `systemMessage`; `additionalContext` for a rule's note; nothing when there is no objection |
 | `PostToolUse` | `tool_use_id`, `tool_response`, `transcript_path` | `additionalContext` and `systemMessage` when the output holds a credential, or a rule left a note |
 | `Stop` | `session_id` | `decision: block` with what a `finally` rule still needs |

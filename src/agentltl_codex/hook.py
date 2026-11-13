@@ -5,7 +5,9 @@ event JSON on stdin and prints the hook's JSON answer (``hooks/hooks.json``).
     SessionStart      remind Codex of the rules (also after a resume, a /clear, a compaction)
     SubagentStart     the same for a subagent, whose calls are checked as Codex's own
     UserPromptSubmit  the user wrote: lift a `stop`, let `finally` rules send Codex back again,
-                      and let a call an `ask` rule refused go through once if repeated
+                      and let a call an `ask` rule refused go through once if repeated. Record the
+                      prompt as a `UserPrompt {prompt}` call when a rule's `UserPrompt` target
+                      matches it
     PreToolUse        deny a call that breaks a rule (a `stop` denies every call until the
                       user writes), else stay silent or pass on the rules' note
     PostToolUse       add the call that ran to the session and project traces (status 0, or
@@ -94,7 +96,7 @@ def _handle(event: str, payload: Dict[str, Any], session: Any) -> Optional[Dict[
     if event == "UserPromptSubmit":
         # A subagent's task arrives as its "prompt": that is Codex writing, not the user.
         if not payload.get("agent_id"):
-            session.prompt()
+            session.prompt(payload.get("prompt"))
             _answered(session)
         return None
     try:

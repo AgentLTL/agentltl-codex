@@ -145,6 +145,37 @@ def test_what_a_command_prints_counts_as_read(project):
     assert decision(overwrite("e")) == "deny"
 
 
+SKILLS = """
+settings: {announce: false}
+rules:
+  - id: review-checklist
+    finally:
+      call: {tool: Read, where: {file_path: "*review/references/checklist.md"}}
+      since:
+        - {tool: UserPrompt, where: {prompt: "*$review*"}}
+        - {tool: Read, where: {file_path: "*/review/SKILL.md"}}
+"""
+
+
+def test_a_skill_mentioned_or_read_needs_its_card(project):
+    (project / "AGENTLTL.yaml").write_text(SKILLS)
+
+    def prompts():
+        return [c["arguments"]["prompt"] for c in store.read("s1").get("completed_tool_calls", [])
+                if c["tool_name"] == "UserPrompt"]
+
+    prompt(project, "CHILD $review", agent_id="a1", agent_type="default")   # a subagent's task
+    assert prompts() == [] and stop(project) is None
+    prompt(project, "$review the docs")                  # Codex injects the skill: no tool call
+    assert prompts() == ["$review the docs"]
+    out = stop(project)
+    assert out["decision"] == "block" and "review-checklist" in out["reason"]
+    post(project, *bash("cat /s/review/references/checklist.md"), "...")
+    assert stop(project) is None
+    post(project, *bash("sed -n 1,80p /s/review/SKILL.md"), "...")   # read by Codex itself
+    assert "review-checklist" in stop(project)["reason"]
+
+
 def rollout(project, call_id, exit_code):
     path = project / "rollout.jsonl"
     with open(path, "a") as fh:
