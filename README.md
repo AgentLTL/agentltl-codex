@@ -170,7 +170,7 @@ Codex runs the plugin's hooks (`hooks/hooks.json`) around every tool call:
 | `SessionStart`, `SubagentStart` | lists the rules in force to Codex, or to the subagent |
 | `PreToolUse` | decides the call: `deny` with the reason, or silence |
 | `PostToolUse` | records the call that ran (and whether it failed), scans the output for credentials |
-| `UserPromptSubmit` | you replied: lifts a `stop`, lets an approved `ask` through |
+| `UserPromptSubmit` | you replied: lifts a `stop`, lets an approved `ask` through, records the prompt when a rule's `UserPrompt` target matches it |
 | `Stop` | sends Codex back while a `finally` rule is unmet |
 
 Codex's hooks have no "ask" answer, so the plugin emulates it; the
